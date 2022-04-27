@@ -1,7 +1,5 @@
 import json
-import random
 import uuid
-from DB import DataStorage
 import os
 import datetime
 import tempfile
@@ -15,10 +13,10 @@ def string(func: callable):
 
     return wrapper
 
-class MetaInf():
 
-
-    id = None
+class MetaInf:
+    #унаследовать от NamedTuple для более простого перечисления свойств
+    id: str = None
     name: str = 'name'
     tag: str = 'tag'
     size: str = None
@@ -29,7 +27,6 @@ class MetaInf():
         self.id = self._generate_id()
         self._set_params(params, required_params=[self.name, self.tag])
         self.size = self._file_size(payload)
-
         self.mimeType = content_type
         # self.modificationTime = datetime()
 
@@ -51,9 +48,7 @@ class MetaInf():
         data_dict = {}
         for attribute in self.__annotations__:
             data_dict[attribute] = getattr(self, attribute)
-        data_str = str(data_dict)
-        data_str = data_str.replace("\'", "\"")
-        data_json = json.loads(data_str)
+        data_json = json.dumps(data_dict)
         return data_json
 
     def _set_params(self, params, required_params):
@@ -64,5 +59,3 @@ class MetaInf():
                 req_param = params[req_param]
             else:
                 req_param = ""
-
-

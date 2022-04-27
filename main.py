@@ -7,12 +7,8 @@ from Meta import MetaInf
 from DB import DataStorage
 
 
-
-
 class RequestHandler(BaseHTTPRequestHandler):
-
     storage = DataStorage("File_storage")
-
 
     def do_GET(self):
         params = parse_qs(urlparse(self.path).query)
@@ -50,11 +46,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                 payload = self.rfile.read(content_length)
                 content_type = self.headers.get_content_type()
 
-
                 info = MetaInf(params, payload, content_type)
                 self.storage.load_to_database(info)
                 file_id = info.id
-
 
                 put_file_to_dir(directory, payload, file_id, filename=filename)
                 if not os.path.exists(directory):
@@ -63,25 +57,17 @@ class RequestHandler(BaseHTTPRequestHandler):
                     f.write(payload)
 
                 meta = info.return_meta_info()
-                # self.send_response(201)
-                self.send_response_only(201, message=meta)
-                print(meta)
-                # self.wfile.write(meta)
-
+                # print(meta.decode('utf-8'))
+                self.send_response(201)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(meta.encode('utf-8'))
 
         end = urlparse(self.path).path
         if end == '/api/upload':
             upload()
         else:
             self.send_error(404)
-
-
-
-
-            # self.send_header("Content-type", "text/html")
-            # self.end_headers()
-            # self.wfile.write('<html><head><meta charset="utf-8">'.encode('utf-8'))
-            # self.wfile.write('<body>Был получен POST-запрос.</body></html>'.encode('utf-8'))
 
     def do_DELETE(self):
         params = parse_qs(urlparse(self.path).query)
@@ -91,15 +77,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write('<html><head><meta charset="utf-8">'.encode('utf-8'))
         self.wfile.write('<title>Простой HTTP-сервер.</title></head>'.encode('utf-8'))
-        self.wfile.write('<body>Был получен DELETE-запрос.</body></html>'.encode('utf-8'))
+
         pass
-
-
-
-
 
 
 server = HTTPServer(("127.0.0.1", 8000), RequestHandler)
 server.serve_forever()
-
-
