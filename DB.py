@@ -1,10 +1,7 @@
 import sqlite3
 
 
-
-
 class DataStorage:
-
     data_base_name = None
     connection = None
     cursor = None
@@ -29,10 +26,10 @@ class DataStorage:
         self.connection.commit()
 
     def load_to_database(self, data):
-
-        self.cursor.execute("INSERT OR IGNORE INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
-                                (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
-                                )
+        self.cursor.execute(
+            "INSERT OR IGNORE INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
+            (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
+            )
         self.connection.commit()
 
     def get_from_database(self, name):
@@ -42,8 +39,6 @@ class DataStorage:
         data = self.cursor.fetchall()
         return data
 
-
     # def drop_data(self):
     #     self.cursor.execute("DELETE FROM btc_data")
     #     self.connection.commit()
-

@@ -15,7 +15,7 @@ def string(func: callable):
 
 
 class MetaInf:
-    #унаследовать от NamedTuple для более простого перечисления свойств
+    # унаследовать от NamedTuple для более простого перечисления свойств
     id: str = None
     name: str = 'name'
     tag: str = 'tag'
