@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, urlparse
 import os
 from Meta import MetaInf
 from DB import DataStorage
-import tempfile
+
 
 
 
@@ -53,6 +53,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                 info = MetaInf(params, payload, content_type)
                 self.storage.load_to_database(info)
+                file_id = info.id
 
 
                 put_file_to_dir(directory, payload, file_id, filename=filename)
@@ -62,8 +63,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                     f.write(payload)
 
                 meta = info.return_meta_info()
-                self.send_response(201)
-                self.wfile.write(meta)
+                # self.send_response(201)
+                self.send_response_only(201, message=meta)
+                print(meta)
+                # self.wfile.write(meta)
 
 
         end = urlparse(self.path).path

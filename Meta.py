@@ -4,43 +4,55 @@ import uuid
 from DB import DataStorage
 import os
 import datetime
+import tempfile
 
+
+def string(func: callable):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        result = str(result)
+        return result
+
+    return wrapper
 
 class MetaInf():
-    payload = None
+
 
     id = None
     name: str = 'name'
     tag: str = 'tag'
-    size: int = None
+    size: str = None
     mimeType: str = None
     modificationTime: str = ""
 
     def __init__(self, params, payload, content_type):
         self.id = self._generate_id()
         self._set_params(params, required_params=[self.name, self.tag])
-
-        self.payload = payload
         self.size = self._file_size(payload)
 
         self.mimeType = content_type
         # self.modificationTime = datetime()
 
+    @string
     def _generate_id(self):
         file_id = uuid.uuid4()
         return file_id
 
+    @string
     def _file_size(self, payload):
-        stat = os.stat(payload)
+        file = tempfile.NamedTemporaryFile("wb")
+        file.write(payload)
+        stat = os.stat(file.name)
         size = stat.st_size
         return size
 
     def return_meta_info(self):
         """делает JSON из полей класса"""
         data_dict = {}
-        for attribute in dir(self):
+        for attribute in self.__annotations__:
             data_dict[attribute] = getattr(self, attribute)
         data_str = str(data_dict)
+        data_str = data_str.replace("\'", "\"")
         data_json = json.loads(data_str)
         return data_json
 

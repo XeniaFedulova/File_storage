@@ -20,8 +20,9 @@ class DataStorage:
             id TEXT,
             name TEXT,
             tag TEXT,
-            payload JSON,
-            meta JSON,
+            size TEXT,
+            mimeType TEXT,
+            modificationTime TEXT,
             UNIQUE(id));
             """)
 
