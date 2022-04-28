@@ -40,5 +40,5 @@ class DataStorage:
         return data
 
     # def drop_data(self):
-    #     self.cursor.execute("DELETE FROM btc_data")
+    #     self.cursor.execute("DELETE FROM file_storage")
     #     self.connection.commit()
