@@ -17,7 +17,7 @@ class DataStorage:
             id TEXT,
             name TEXT,
             tag TEXT,
-            size TEXT,
+            size INTEGER,
             mimeType TEXT,
             modificationTime TEXT,
             UNIQUE(id));
@@ -30,13 +30,29 @@ class DataStorage:
             "INSERT OR IGNORE INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
             (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
             )
+        print(data.tag)
         self.connection.commit()
 
-    def get_from_database(self, name):
-        self.cursor.execute("SELECT * FROM file_storage where name == \'%s\'"
-                            % (name)
-                            )
+    def get_from_database(self, params: dict):
+
+        # self.cursor.execute("""SELECT * FROM file_storage where
+        #                     id=? AND name=? AND tag=? AND size=?
+        #                     AND mimeType=? AND modificationTime=?"""
+        #                     , list_of_args
+        #                     )
+        # data = self.cursor.fetchall()
+
+        sql = """SELECT * FROM file_storage WHERE"""
+        for key, value in params.items():
+            string = " "+key+"=="+"\""+value+"\""+" AND"
+            sql += string
+        sql = sql.strip(" AND")
+        # sql = """SELECT * FROM file_storage"""
+        print(sql)
+
+        self.cursor.execute(sql)
         data = self.cursor.fetchall()
+
         return data
 
     # def drop_data(self):

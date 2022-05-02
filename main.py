@@ -7,31 +7,54 @@ from Meta import MetaInf
 from DB import DataStorage
 
 
+def put_file_to_dir(directory, payload, filename: str = ""):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    with open(os.path.join(directory, filename), "wb") as f:
+        f.write(payload)
+
+
+def handle_params(params):
+    for param in params.keys():
+        params[param] = "".join(params[param])
+    return params
+
+
+def handle_info_from_db(data: list):
+    for obj in data:
+        file_id = obj[0]
+        name = obj[1]
+        tag = obj[2]
+        size = obj[3]
+        mimeType = obj[4]
+
+        inf = MetaInf(file_id, name, tag, size, mimeType)
+        meta = inf.return_meta_info()
+        return meta
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     storage = DataStorage("File_storage")
 
     def do_GET(self):
-        params = parse_qs(urlparse(self.path).query)
-        content_length = self.headers.get("Content-Length")
-        if content_length == None:
-            self.send_response(411)
-        else:
+
+        def get():
+            params = parse_qs(urlparse(self.path).query)
+            params = handle_params(params)
+            data = self.storage.get_from_database(params)
+            meta = handle_info_from_db(data)
             self.send_response(200)
-            body = self.rfile.read(content_length)
-            print(body)
-            self.send_header("Content-type", "text/html")
+            self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write('<html><head><meta charset="utf-8">'.encode('utf-8'))
-            self.wfile.write('<title>Простой HTTP-сервер.</title></head>'.encode('utf-8'))
-            self.wfile.write('<body>Был получен GET-запрос.</body></html>'.encode('utf-8'))
+            self.wfile.write(meta.encode('utf-8'))
+
+        end = urlparse(self.path).path
+        if end == '/api/get':
+            get()
+        else:
+            self.send_error(404)
 
     def do_POST(self):
-
-        def put_file_to_dir(directory, payload, file_id, filename: str = None):
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            with open(os.path.join(directory, filename), "wb") as f:
-                f.write(payload)
 
         def upload():
             content_length = int(self.headers.get("Content-Length"))
@@ -41,23 +64,24 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_response(411)
             else:
                 params = parse_qs(urlparse(self.path).query)
-                filename = str(params['name'][0])
+                params = handle_params(params)
+                file_id, name, tag = params["id"], params["name"], params["tag"]
+
                 directory = "C:\\Users\\user\\storage_files"
                 payload = self.rfile.read(content_length)
                 content_type = self.headers.get_content_type()
 
-                info = MetaInf(params, payload, content_type)
+                info = MetaInf(file_id, name, tag, content_length, content_type)
                 self.storage.load_to_database(info)
-                file_id = info.id
+                file_name = info.name
 
-                put_file_to_dir(directory, payload, file_id, filename=filename)
+                put_file_to_dir(directory, payload, filename=file_name)
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                with open(os.path.join(directory, filename), "wb") as f:
+                with open(os.path.join(directory, file_name), "wb") as f:
                     f.write(payload)
 
                 meta = info.return_meta_info()
-                # print(meta.decode('utf-8'))
                 self.send_response(201)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
