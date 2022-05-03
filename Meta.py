@@ -1,8 +1,5 @@
-import json
 import uuid
-import os
 import datetime
-import tempfile
 
 
 def string(func: callable):
@@ -21,22 +18,26 @@ class MetaInf:
     tag: str = ""
     size: int = 0
     mimeType: str = ""
-    modificationTime: str = ""
+    modificationTime: datetime = None
 
-    def __init__(self, file_id: str = "", name: str = "", tag: str = "",
-                 size: int = 0, content_type: str = ""):
-        if file_id == "":
+
+    def __init__(self, params: dict = None,
+                 size: int = 0, content_type: str = "", modificationTime: datetime = None):
+
+        if "id" in params.keys():
+            self.id = params["id"]
+        else:
             self.file_id = self._generate_id()
+        if "name" in params.keys():
+            self.name = params["name"]
         else:
-            self.id = file_id
-        if name == "":
-            self.name = self.file_id
-        else:
-            self.name = name
-        self.tag = tag
+            self.name = self.id
+        if "tag" in params.keys():
+            self.name = params["tag"]
+
         self.size = size
         self.mimeType = content_type
-        # self.modificationTime = modificationTime
+        self.modificationTime = modificationTime
 
     @string
     def _generate_id(self):

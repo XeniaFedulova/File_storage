@@ -1,4 +1,4 @@
-import email.message
+import datetime
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -14,7 +14,7 @@ def put_file_to_dir(directory, payload, filename: str = ""):
         f.write(payload)
 
 
-def handle_params(params):
+def handle_params_from_req(params):
     for param, value in params.items():
         if len(value) == 1:
             params[param] = "".join(value)
@@ -34,13 +34,13 @@ def handle_info_from_db(data: list):
     response = {}
     counter = 0
     for obj in data:
-        file_id = obj[0]
-        name = obj[1]
-        tag = obj[2]
+        params = {"id": obj[0],
+                  "name": obj[1],
+                  "tag": obj[2]}
         size = obj[3]
         mimeType = obj[4]
-
-        inf = MetaInf(file_id, name, tag, size, mimeType)
+        modificationTime = obj[5]
+        inf = MetaInf(params, size, mimeType, modificationTime)
         meta = inf.return_meta_info()
         response[str(counter)] = meta
         counter += 1
@@ -49,14 +49,30 @@ def handle_info_from_db(data: list):
     return data_json
 
 
+def set_modificationTime():
+    time_format = "%Y-%m-%d %H:%M:%S"
+    now = datetime.datetime.now().strftime(time_format)
+    return now
+
+
+def get_ids_of_delete_files(data_from_db: list):
+    file_ids = []
+    for obj in data_from_db:
+        file_id = obj[0]
+        file_ids.append(file_id)
+    return file_ids
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     storage = DataStorage("File_storage")
+    # storage.drop_data()
+    directory = "C:\\Users\\user\\storage_files"
 
     def do_GET(self):
 
         def get():
             params = parse_qs(urlparse(self.path).query)
-            params = handle_params(params)
+            params = handle_params_from_req(params)
             data = self.storage.get_from_database(params)
             meta = handle_info_from_db(data)
             self.send_response(200)
@@ -64,13 +80,20 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(meta.encode('utf-8'))
 
+        def download():
+            pass
+
         end = urlparse(self.path).path
         if end == '/api/get':
             get()
+        elif end == '/api/download':
+            download()
         else:
             self.send_error(404)
 
     def do_POST(self):
+
+        """1. сделать перезапись файла при совпадающем айдишнике"""
 
         def upload():
             content_length = int(self.headers.get("Content-Length"))
@@ -81,20 +104,19 @@ class RequestHandler(BaseHTTPRequestHandler):
             else:
                 params = parse_qs(urlparse(self.path).query)
                 params = handle_params_for_upload(params)
-                file_id, name, tag = params["id"], params["name"], params["tag"]
 
-                directory = "C:\\Users\\user\\storage_files"
                 payload = self.rfile.read(content_length)
+                modificationTime = set_modificationTime()
                 content_type = self.headers.get_content_type()
 
-                info = MetaInf(file_id, name, tag, content_length, content_type)
+                info = MetaInf(params, content_length, content_type, modificationTime)
                 self.storage.load_to_database(info)
-                file_name = info.name
+                file_id = info.id
 
-                put_file_to_dir(directory, payload, filename=file_name)
-                if not os.path.exists(directory):
-                    os.makedirs(directory)
-                with open(os.path.join(directory, file_name), "wb") as f:
+                put_file_to_dir(self.directory, payload, filename=file_id)
+                if not os.path.exists(self.directory):
+                    os.makedirs(self.directory)
+                with open(os.path.join(self.directory, file_id), "wb") as f:
                     f.write(payload)
 
                 meta = info.return_meta_info()
@@ -111,15 +133,25 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_DELETE(self):
-        params = parse_qs(urlparse(self.path).query)
-        print(params)
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        self.wfile.write('<html><head><meta charset="utf-8">'.encode('utf-8'))
-        self.wfile.write('<title>Простой HTTP-сервер.</title></head>'.encode('utf-8'))
 
-        pass
+        def delete():
+            params = parse_qs(urlparse(self.path).query)
+            params = handle_params_from_req(params)
+            data = self.storage.get_from_database(params)
+            files_to_delete = get_ids_of_delete_files(data)
+
+            for file_id in files_to_delete:
+                delete_path = self.directory + "\\" + file_id
+                os.remove(delete_path)
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+
+        end = urlparse(self.path).path
+        if end == '/api/upload':
+            delete()
+        else:
+            self.send_error(404)
 
 
 server = HTTPServer(("127.0.0.1", 8000), RequestHandler)
