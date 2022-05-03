@@ -25,7 +25,7 @@ class MetaInf:
 
     def __init__(self, file_id: str = "", name: str = "", tag: str = "",
                  size: int = 0, content_type: str = ""):
-        if file_id != "":
+        if file_id == "":
             self.file_id = self._generate_id()
         else:
             self.id = file_id
@@ -48,6 +48,5 @@ class MetaInf:
         data_dict = {}
         for attribute in self.__annotations__:
             data_dict[attribute] = getattr(self, attribute)
-        data_json = json.dumps(data_dict)
-        return data_json
+        return data_dict
 

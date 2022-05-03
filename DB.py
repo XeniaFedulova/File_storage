@@ -12,6 +12,22 @@ class DataStorage:
         self.cursor = self.connection.cursor()
         self._create_database()
 
+    def _make_req_string(self, params):
+        sql = """SELECT * FROM file_storage WHERE"""
+        for key, value in params.items():
+            if type(value) == list:
+                sql += " ("
+                for item in value:
+                    string = " " + key + "==" + "\"" + item + "\"" + " OR"
+                    sql += string
+                sql = sql.strip(" OR")
+                sql += ") AND"
+            else:
+                string = " " + key + "==" + "\"" + value + "\"" + " AND"
+                sql += string
+        sql = sql.strip(" AND")
+        return sql
+
     def _create_database(self):
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS file_storage(
             id TEXT,
@@ -35,26 +51,12 @@ class DataStorage:
 
     def get_from_database(self, params: dict):
 
-        # self.cursor.execute("""SELECT * FROM file_storage where
-        #                     id=? AND name=? AND tag=? AND size=?
-        #                     AND mimeType=? AND modificationTime=?"""
-        #                     , list_of_args
-        #                     )
-        # data = self.cursor.fetchall()
-
-        sql = """SELECT * FROM file_storage WHERE"""
-        for key, value in params.items():
-            string = " "+key+"=="+"\""+value+"\""+" AND"
-            sql += string
-        sql = sql.strip(" AND")
-        # sql = """SELECT * FROM file_storage"""
-        print(sql)
-
-        self.cursor.execute(sql)
+        req_string = self._make_req_string(params)
+        self.cursor.execute(req_string)
         data = self.cursor.fetchall()
 
         return data
 
-    # def drop_data(self):
-    #     self.cursor.execute("DELETE FROM file_storage")
-    #     self.connection.commit()
+    def drop_data(self):
+        self.cursor.execute("DELETE FROM file_storage")
+        self.connection.commit()

@@ -15,12 +15,24 @@ def put_file_to_dir(directory, payload, filename: str = ""):
 
 
 def handle_params(params):
-    for param in params.keys():
-        params[param] = "".join(params[param])
+    for param, value in params.items():
+        if len(value) == 1:
+            params[param] = "".join(value)
+    return params
+
+
+def handle_params_for_upload(params):
+    for param, value in params.items():
+        if len(value) > 1:
+            params[param] = value[0]
+        else:
+            params[param] = "".join(value)
     return params
 
 
 def handle_info_from_db(data: list):
+    response = {}
+    counter = 0
     for obj in data:
         file_id = obj[0]
         name = obj[1]
@@ -30,7 +42,11 @@ def handle_info_from_db(data: list):
 
         inf = MetaInf(file_id, name, tag, size, mimeType)
         meta = inf.return_meta_info()
-        return meta
+        response[str(counter)] = meta
+        counter += 1
+
+    data_json = json.dumps(response)
+    return data_json
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -64,7 +80,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_response(411)
             else:
                 params = parse_qs(urlparse(self.path).query)
-                params = handle_params(params)
+                params = handle_params_for_upload(params)
                 file_id, name, tag = params["id"], params["name"], params["tag"]
 
                 directory = "C:\\Users\\user\\storage_files"
@@ -82,6 +98,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     f.write(payload)
 
                 meta = info.return_meta_info()
+                meta = json.dumps(meta)
                 self.send_response(201)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
