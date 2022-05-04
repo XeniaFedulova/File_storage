@@ -56,10 +56,10 @@ def set_modificationTime():
 
 
 def get_ids_of_delete_files(data_from_db: list):
-    file_ids = []
+    file_ids = {"id": []}
     for obj in data_from_db:
         file_id = obj[0]
-        file_ids.append(file_id)
+        file_ids["id"].append(file_id)
     return file_ids
 
 
@@ -134,21 +134,31 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
 
+        """удалять также инфу из таблицы с метаданными"""
+
         def delete():
             params = parse_qs(urlparse(self.path).query)
             params = handle_params_from_req(params)
             data = self.storage.get_from_database(params)
             files_to_delete = get_ids_of_delete_files(data)
 
-            for file_id in files_to_delete:
+            for file_id in files_to_delete["id"]:
                 delete_path = self.directory + "\\" + file_id
                 os.remove(delete_path)
-            self.send_response(200)
+
+            print(files_to_delete)
+
+            self.storage.delete_from_db(files_to_delete)
+
+            amount_of_deleted_files = str(len(files_to_delete))
+            message = amount_of_deleted_files + " files deleted"
+            self.send_response(200, message=message)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
 
+
         end = urlparse(self.path).path
-        if end == '/api/upload':
+        if end == '/api/delete':
             delete()
         else:
             self.send_error(404)

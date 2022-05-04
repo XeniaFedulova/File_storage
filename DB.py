@@ -12,20 +12,24 @@ class DataStorage:
         self.cursor = self.connection.cursor()
         self._create_database()
 
-    def _make_req_string(self, params):
-        sql = """SELECT * FROM file_storage WHERE"""
+    def _make_req_string(self, base_string, params):
         for key, value in params.items():
             if type(value) == list:
-                sql += " ("
+                if len(params) > 1:
+                    base_string += " ("
                 for item in value:
                     string = " " + key + "==" + "\"" + item + "\"" + " OR"
-                    sql += string
-                sql = sql.strip(" OR")
-                sql += ") AND"
+                    base_string += string
+                base_string = base_string.strip(" OR")
+                if len(params) > 1:
+                    base_string += ") AND"
+                else:
+                    sql = base_string.strip(" OR")
             else:
                 string = " " + key + "==" + "\"" + value + "\"" + " AND"
-                sql += string
-        sql = sql.strip(" AND")
+                base_string += string
+        if base_string.startswith("SELECT"):
+            sql = base_string.strip(" AND")
         return sql
 
     def _create_database(self):
@@ -45,17 +49,22 @@ class DataStorage:
         self.cursor.execute(
             "INSERT OR IGNORE INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
             (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
-            )
+        )
         print(data.tag)
         self.connection.commit()
 
     def get_from_database(self, params: dict):
-
-        req_string = self._make_req_string(params)
+        base_string = """SELECT * FROM file_storage WHERE"""
+        req_string = self._make_req_string(base_string, params)
         self.cursor.execute(req_string)
         data = self.cursor.fetchall()
-
         return data
+
+    def delete_from_db(self, file_ids: dict):
+        base_string = "DELETE FROM file_storage WHERE"
+        req_string = self._make_req_string(base_string, file_ids)
+        self.cursor.execute(req_string)
+        self.connection.commit()
 
     def drop_data(self):
         self.cursor.execute("DELETE FROM file_storage")
