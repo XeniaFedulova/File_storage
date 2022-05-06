@@ -5,6 +5,7 @@ from urllib.parse import parse_qs, urlparse
 import os
 from Meta import MetaInf
 from DB import DataStorage
+import shutil
 
 
 def put_file_to_dir(directory, payload, filename: str = ""):
@@ -87,7 +88,23 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(meta.encode('utf-8'))
 
         def download():
-            pass
+            """обработка ошибок"""
+            params = parse_qs(urlparse(self.path).query)
+            params = handle_params_from_req(params)
+            data = self.storage.get_from_database(params, download=True)
+            for file in data:
+                path = self.directory+"\\"+file[0]
+                with open(path, 'rb') as f:
+                    name = file[1]
+                    print(name)
+                    self.send_response(200)
+                    self.send_header("Content-Type", 'application/octet-stream')
+                    self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(file[1]))
+                    fs = os.fstat(f.fileno())
+                    self.send_header("Content-Length", str(fs.st_size))
+                    self.end_headers()
+                    self.wfile.write(f.read())
+
 
         end = urlparse(self.path).path
         if end == '/api/get':
@@ -98,6 +115,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self):
+
+        """пофиксить перезапись файла"""
 
         def upload():
             content_length = int(self.headers.get("Content-Length"))

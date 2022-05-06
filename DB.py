@@ -52,11 +52,14 @@ class DataStorage:
         )
         self.connection.commit()
 
-    def get_from_database(self, params: dict = None, get_all_data: bool = False):
+    def get_from_database(self, params: dict = None, get_all_data: bool = False, download:bool = False):
         if get_all_data:
             req_string = "SELECT * FROM file_storage"
         else:
-            base_string = """SELECT * FROM file_storage WHERE"""
+            if download:
+                base_string = """SELECT id, name FROM file_storage WHERE"""
+            else:
+                base_string = """SELECT * FROM file_storage WHERE"""
             req_string = self._make_req_string(base_string, params)
         self.cursor.execute(req_string)
         data = self.cursor.fetchall()
