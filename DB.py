@@ -50,14 +50,17 @@ class DataStorage:
             "INSERT OR IGNORE INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
             (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
         )
-        print(data.tag)
         self.connection.commit()
 
-    def get_from_database(self, params: dict):
-        base_string = """SELECT * FROM file_storage WHERE"""
-        req_string = self._make_req_string(base_string, params)
+    def get_from_database(self, params: dict = None, get_all_data: bool = False):
+        if get_all_data:
+            req_string = "SELECT * FROM file_storage"
+        else:
+            base_string = """SELECT * FROM file_storage WHERE"""
+            req_string = self._make_req_string(base_string, params)
         self.cursor.execute(req_string)
         data = self.cursor.fetchall()
+        print(data)
         return data
 
     def delete_from_db(self, file_ids: dict):

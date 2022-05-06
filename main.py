@@ -70,10 +70,18 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
 
+        """фиксы с именем (такое же как айди), фиксы с возвращ всех джсонов"""
+
         def get():
+            flag = False
             params = parse_qs(urlparse(self.path).query)
+            if len(params) == 0:
+                flag = True
             params = handle_params_from_req(params)
-            data = self.storage.get_from_database(params)
+            data = self.storage.get_from_database(params=params, get_all_data=flag)
+            if len(data) == 0:
+                flag = True
+                data = self.storage.get_from_database(get_all_data=flag)
             meta = handle_info_from_db(data)
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -146,16 +154,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                 delete_path = self.directory + "\\" + file_id
                 os.remove(delete_path)
 
-            print(files_to_delete)
-
-            self.storage.delete_from_db(files_to_delete)
-
-            amount_of_deleted_files = str(len(files_to_delete))
+            amount_of_deleted_files = str(len(files_to_delete["id"]))
+            if int(amount_of_deleted_files) > 0:
+                self.storage.delete_from_db(files_to_delete)
             message = amount_of_deleted_files + " files deleted"
             self.send_response(200, message=message)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-
 
         end = urlparse(self.path).path
         if end == '/api/delete':

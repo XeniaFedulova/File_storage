@@ -1,3 +1,4 @@
+import json
 from unittest.case import TestCase
 from connector import FileStorageConnector
 import urllib.error
@@ -9,13 +10,20 @@ class EmptyStorageCase(TestCase):
 
     """набор тестов для определенного состояния приложения"""
 
+    @classmethod
     def setUpClass(cls) -> None:
         cls.connector = FileStorageConnector("http://127.0.0.1:8000")
+        result = cls.connector.get()
+        result = result[0]
+        for key, value in result.items():
+            file_id = value["id"]
+            cls.connector.delete({'id': file_id})
 
     def tearDown(self) -> None:
         result = self.connector.get()
+        result = result[0]
         for json in result:
-            self.connector.delete({id: json["id"]})
+            self.connector.delete({'id': json["id"]})
 
     def test_empty_get_without_params(self):
         result = self.connector.get()

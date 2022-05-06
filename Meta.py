@@ -23,21 +23,21 @@ class MetaInf:
 
     def __init__(self, params: dict = None,
                  size: int = 0, content_type: str = "", modificationTime: datetime = None):
-
         if "id" in params.keys():
             self.id = params["id"]
         else:
-            self.file_id = self._generate_id()
+            self.id = self._generate_id()
         if "name" in params.keys():
             self.name = params["name"]
         else:
             self.name = self.id
         if "tag" in params.keys():
-            self.name = params["tag"]
+            self.tag = params["tag"]
 
         self.size = size
         self.mimeType = content_type
         self.modificationTime = modificationTime
+
 
     @string
     def _generate_id(self):
