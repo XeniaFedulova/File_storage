@@ -70,8 +70,6 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
 
-        """фиксы с именем (такое же как айди), фиксы с возвращ всех джсонов"""
-
         def get():
             flag = False
             params = parse_qs(urlparse(self.path).query)
@@ -100,8 +98,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self):
-
-        """1. сделать перезапись файла при совпадающем айдишнике"""
 
         def upload():
             content_length = int(self.headers.get("Content-Length"))
@@ -141,8 +137,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_DELETE(self):
-
-        """удалять также инфу из таблицы с метаданными"""
 
         def delete():
             params = parse_qs(urlparse(self.path).query)
