@@ -138,23 +138,28 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
 
+        """обрабатывать отсутствие параметров в запросе - выводить ошибку с кодом 400"""
+
         def delete():
             params = parse_qs(urlparse(self.path).query)
             params = handle_params_from_req(params)
-            data = self.storage.get_from_database(params)
-            files_to_delete = get_ids_of_delete_files(data)
+            if len(params) == 0:
+                self.send_error(400)
+            else:
+                data = self.storage.get_from_database(params)
+                files_to_delete = get_ids_of_delete_files(data)
 
-            for file_id in files_to_delete["id"]:
-                delete_path = self.directory + "\\" + file_id
-                os.remove(delete_path)
+                for file_id in files_to_delete["id"]:
+                    delete_path = self.directory + "\\" + file_id
+                    os.remove(delete_path)
 
-            amount_of_deleted_files = str(len(files_to_delete["id"]))
-            if int(amount_of_deleted_files) > 0:
-                self.storage.delete_from_db(files_to_delete)
-            message = amount_of_deleted_files + " files deleted"
-            self.send_response(200, message=message)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
+                amount_of_deleted_files = str(len(files_to_delete["id"]))
+                if int(amount_of_deleted_files) > 0:
+                    self.storage.delete_from_db(files_to_delete)
+                message = amount_of_deleted_files + " files deleted"
+                self.send_response(200, message=message)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
 
         end = urlparse(self.path).path
         if end == '/api/delete':
@@ -163,5 +168,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
 
-server = HTTPServer(("127.0.0.1", 8000), RequestHandler)
-server.serve_forever()
+if __name__ == "__main__":
+    server = HTTPServer(("127.0.0.1", 8000), RequestHandler)
+    server.serve_forever()

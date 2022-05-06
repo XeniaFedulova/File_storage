@@ -1,5 +1,6 @@
 import requests
 import json
+import urllib.error
 from Meta import MetaInf
 
 upload = "/api/upload"
@@ -20,10 +21,12 @@ def prepare_request(base_url: str, endpoint: str):
     method = endpoints[endpoint]
 
     def make_request(params=None, data=None, headers=None):
+
         response = requests.request(method=method, url=url, data=data, params=params, headers=headers)
         response.raise_for_status()
+        response_message = response.reason
         status_code = response.status_code
-        response_status = (response.content.decode("utf-8"), status_code)
+        response_status = (response.content.decode("utf-8"), status_code, response_message)
         return response_status
 
     return make_request
@@ -42,10 +45,10 @@ class FileStorageConnector:
         content_type = meta.mimeType
         size = str(meta.size)
         response = self._upload(params=params, data=payload, headers={"Content-Type": content_type, "Content-Length": size})
-        # content = json.loads(response[0])
-        # status = response[1]
-        # response_status = (content, status)
-        # return response_status
+        content = json.loads(response[0])
+        status = response[1]
+        response_and_status = (content, status)
+        return response_and_status
 
     def get(self, params=None):
         response = self._get(params=params)
@@ -63,17 +66,20 @@ class FileStorageConnector:
 
     def delete(self, params):
         response = self._delete(params=params)
-        print(response)
+        if type(response) == requests.exceptions.HTTPError:
+            raise requests.exceptions.HTTPError
         response_data = response[0]
         status = response[1]
-        response_and_status = (response_data, status)
+        status_message = response[2]
+        response_and_status = (response_data, status, status_message)
         return response_and_status
 
+#
+# payload = open("file_text", "rb")
+# payload = "kdkd".encode("utf-8")
+# a = MetaInf(params={}, size=8, content_type="application/json")
+# params={}
+# b = FileStorageConnector(base_url='http://127.0.0.1:8000')
+# a = b.delete(params)
+# print(a)
 
-payload = open("file_text", "rb")
-payload = "kdkd".encode("utf-8")
-a = MetaInf(params={"id": "gg"}, size=8, content_type="application/json")
-b = FileStorageConnector(base_url='http://127.0.0.1:8000')
-a = b.delete({"id": "0"})
-print(a)
-print(type(payload))
