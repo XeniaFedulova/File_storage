@@ -15,33 +15,33 @@ class EmptyStorageCase(TestCase):
         cls.connector = FileStorageConnector("http://127.0.0.1:8000")
         result = cls.connector.get()
         result = result[0]
-        for key, value in result.items():
-            file_id = value["id"]
+        for json in result:
+            file_id = json["id"]
             cls.connector.delete({'id': file_id})
 
     @classmethod
-    def tearDown(self) -> None:
-        result = self.connector.get()
+    def tearDown(cls) -> None:
+        result = cls.connector.get()
         result = result[0]
-        for key, value in result.items():
-            file_id = value["id"]
-            self.connector.delete({'id': file_id})
+        for json in result:
+            file_id = json["id"]
+            cls.connector.delete({'id': file_id})
 
     def test_empty_get_without_params(self):
         result = self.connector.get()
-        self.assertEqual(result, ({}, 200))
+        self.assertEqual(result, ([], 200))
 
     def test_empty_get_by_id(self):
         result = self.connector.get({"id": "0"})
-        self.assertEqual(result, ({}, 200))
+        self.assertEqual(result, ([], 200))
 
     def test_empty_get_by_name(self):
         result = self.connector.get({"name": "name"})
-        self.assertEqual(result, ({}, 200))
+        self.assertEqual(result, ([], 200))
 
     def test_empty_get_by_name_and_id(self):
         result = self.connector.get({"id": "0", "name": "name"})
-        self.assertEqual(result, ({}, 200))
+        self.assertEqual(result, ([], 200))
 
     def test_upload_file_by_name(self):
         payload = "My text".encode("utf-8")
@@ -100,14 +100,16 @@ class EmptyStorageCase(TestCase):
 class StorageWithOneFile(TestCase):
     connector = FileStorageConnector("http://127.0.0.1:8000")
     time = set_modificationTime()
-    default_file_data = {
-        "id": "def_id",
-        "name": "def_name",
-        "tag": "def_tag",
-        "size": '12',
-        "mimeType": "application/json",
-        "modificationTime": time
-    }
+    default_file_data = [
+        {
+            "id": "def_id",
+            "name": "def_name",
+            "tag": "def_tag",
+            "size": '12',
+            "mimeType": "application/json",
+            "modificationTime": time
+        }
+    ]
 
     """тесты для базы данных с одним файлом"""
 
@@ -121,28 +123,28 @@ class StorageWithOneFile(TestCase):
         cls.connector.upload(payload, meta)
 
     @classmethod
-    def tearDown(self) -> None:
-        result = self.connector.get()
+    def tearDown(cls) -> None:
+        result = cls.connector.get()
         result = result[0]
-        for key, value in result.items():
-            file_id = value["id"]
-            self.connector.delete({'id': file_id})
+        for json in result:
+            file_id = json["id"]
+            cls.connector.delete({'id': file_id})
 
     def test_get_without_params(self):
         result = self.connector.get({})
-        self.assertEqual(result[0]["0"], self.default_file_data)
+        self.assertEqual(result[0], self.default_file_data)
 
     def test_get_default_file_by_id(self):
         result = self.connector.get({"id": "def_id"})
-        self.assertEqual(result[0]["0"], self.default_file_data)
+        self.assertEqual(result[0], self.default_file_data)
 
     def test_get_default_file_by_name(self):
         result = self.connector.get({"name": "def_name"})
-        self.assertEqual(result[0]["0"], self.default_file_data)
+        self.assertEqual(result[0], self.default_file_data)
 
     def test_default_get_file_by_tag(self):
         result = self.connector.get({"name": "def_tag"})
-        self.assertEqual(result[0]["0"], self.default_file_data)
+        self.assertEqual(result[0], self.default_file_data)
 
     def test_upload_file_by_name(self):
         payload = "My text".encode("utf-8")

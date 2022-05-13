@@ -31,7 +31,7 @@ def handle_params_for_upload(params):
 
 
 def handle_info_from_db(data: list):
-    response = {}
+    response = []
     counter = 0
     for obj in data:
         params = {"id": obj[0],
@@ -42,7 +42,7 @@ def handle_info_from_db(data: list):
         modificationTime = obj[5]
         inf = MetaInf(params, size, mimeType, modificationTime)
         meta = inf.return_meta_info()
-        response[str(counter)] = meta
+        response.append(meta)
         counter += 1
 
     data_json = json.dumps(response)
@@ -56,10 +56,10 @@ def set_modificationTime():
 
 
 def get_ids_of_delete_files(data_from_db: list):
-    file_ids = {"id": []}
+    file_ids = []
     for obj in data_from_db:
         file_id = obj[0]
-        file_ids["id"].append(file_id)
+        file_ids.append(file_id)
     return file_ids
 
 
@@ -87,21 +87,27 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(meta.encode('utf-8'))
 
         def download():
-            """обработка ошибок, доступ только по айдишнику"""
             params = parse_qs(urlparse(self.path).query)
             params = handle_params_from_req(params)
-            data = self.storage.get_from_database(params, download=True)
-            for file in data:
-                path = self.directory + "\\" + file[0]
-                with open(path, 'rb') as f:
-                    name = file[1]
-                    self.send_response(200)
-                    self.send_header("Content-Type", 'application/octet-stream')
-                    self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(name))
-                    fs = os.fstat(f.fileno())
-                    self.send_header("Content-Length", str(fs.st_size))
-                    self.end_headers()
-                    self.wfile.write(f.read())
+            try:
+                param = {"id": params['id']}
+                data = self.storage.get_from_database(param, download=True)
+                if len(data) == 0:
+                    self.send_error(404)
+                for file in data:
+                    file_id = file[0]
+                    path = self.directory + "\\" + file_id
+                    with open(path, 'rb') as f:
+                        name = file[1]
+                        self.send_response(200)
+                        self.send_header("Content-Type", 'application/octet-stream')
+                        self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(name))
+                        fs = os.fstat(f.fileno())
+                        self.send_header("Content-Length", str(fs.st_size))
+                        self.end_headers()
+                        self.wfile.write(f.read())
+            except KeyError:
+                self.send_error(400)
 
         end = urlparse(self.path).path
         if end == '/api/get':
@@ -113,38 +119,34 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
 
-        """пофиксить перезапись файла"""
-
         def upload():
             content_length = int(self.headers.get("Content-Length"))
 
-            if content_length == None or content_length <= 0:
-                self.send_error(411, message="No content")
-                self.send_response(411)
-            else:
-                params = parse_qs(urlparse(self.path).query)
-                params = handle_params_for_upload(params)
+            if content_length == None:
+                self.send_error(411)
+            params = parse_qs(urlparse(self.path).query)
+            params = handle_params_for_upload(params)
 
-                payload = self.rfile.read(content_length)
-                modificationTime = set_modificationTime()
-                content_type = self.headers.get_content_type()
+            payload = self.rfile.read(content_length)
+            modificationTime = set_modificationTime()
+            content_type = self.headers.get_content_type()
 
-                info = MetaInf(params, content_length, content_type, modificationTime)
-                self.storage.load_to_database(info)
-                file_id = info.id
+            info = MetaInf(params, content_length, content_type, modificationTime)
+            self.storage.load_to_database(info)
+            file_id = info.id
 
-                put_file_to_dir(self.directory, payload, filename=file_id)
-                if not os.path.exists(self.directory):
-                    os.makedirs(self.directory)
-                with open(os.path.join(self.directory, file_id), "wb") as f:
-                    f.write(payload)
+            put_file_to_dir(self.directory, payload, filename=file_id)
+            if not os.path.exists(self.directory):
+                os.makedirs(self.directory)
+            with open(os.path.join(self.directory, file_id), "wb") as f:
+                f.write(payload)
 
-                meta = info.return_meta_info()
-                meta = json.dumps(meta)
-                self.send_response(201)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(meta.encode('utf-8'))
+            meta = info.return_meta_info()
+            meta = json.dumps(meta)
+            self.send_response(201)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(meta.encode('utf-8'))
 
         end = urlparse(self.path).path
         if end == '/api/upload':
@@ -163,11 +165,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 data = self.storage.get_from_database(params)
                 files_to_delete = get_ids_of_delete_files(data)
 
-                for file_id in files_to_delete["id"]:
+                for file_id in files_to_delete:
                     delete_path = self.directory + "\\" + file_id
                     os.remove(delete_path)
 
-                amount_of_deleted_files = str(len(files_to_delete["id"]))
+                amount_of_deleted_files = str(len(files_to_delete))
                 if int(amount_of_deleted_files) > 0:
                     self.storage.delete_from_db(files_to_delete)
                 message = amount_of_deleted_files + " files deleted"

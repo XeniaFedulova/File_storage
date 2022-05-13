@@ -46,13 +46,20 @@ class DataStorage:
         self.connection.commit()
 
     def load_to_database(self, data):
-        self.cursor.execute(
-            "INSERT OR IGNORE INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
-            (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
-        )
+        try:
+            self.cursor.execute(
+                "INSERT INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
+                (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
+            )
+        except sqlite3.IntegrityError:
+            self.delete_from_db([data.id])
+            self.cursor.execute(
+                "INSERT INTO file_storage(id, name, tag, size, mimeType, modificationTime) VALUES (?, ?, ?, ?, ?, ?)",
+                (data.id, data.name, data.tag, data.size, data.mimeType, data.modificationTime)
+            )
         self.connection.commit()
 
-    def get_from_database(self, params: dict = None, get_all_data: bool = False, download:bool = False):
+    def get_from_database(self, params: dict = None, get_all_data: bool = False, download: bool = False):
         if get_all_data:
             req_string = "SELECT * FROM file_storage"
         else:
@@ -63,12 +70,12 @@ class DataStorage:
             req_string = self._make_req_string(base_string, params)
         self.cursor.execute(req_string)
         data = self.cursor.fetchall()
-        print(data)
         return data
 
-    def delete_from_db(self, file_ids: dict):
+    def delete_from_db(self, file_ids: list):
+        params = {"id": file_ids}
         base_string = "DELETE FROM file_storage WHERE"
-        req_string = self._make_req_string(base_string, file_ids)
+        req_string = self._make_req_string(base_string, params)
         self.cursor.execute(req_string)
         self.connection.commit()
 
