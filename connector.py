@@ -59,10 +59,7 @@ class FileStorageConnector:
 
     def download(self, params):
         response = self._download(params=params)
-        response = json.loads(response[0])
-        status = response[1]
-        response_status = (response, status)
-        return response_status
+        return response
 
     def delete(self, params):
         response = self._delete(params=params)
@@ -74,12 +71,12 @@ class FileStorageConnector:
         response_and_status = (response_data, status, status_message)
         return response_and_status
 
-#
-# payload = open("file_text", "rb")
-# payload = "kdkd".encode("utf-8")
-# a = MetaInf(params={}, size=8, content_type="application/json")
-# params={}
-# b = FileStorageConnector(base_url='http://127.0.0.1:8000')
-# a = b.delete(params)
-# print(a)
+
+
+payload = "kdkd".encode("utf-8")
+a = MetaInf(params={"id": "0"}, size=8, content_type="application/json")
+b = FileStorageConnector(base_url='http://127.0.0.1:8000')
+a = b.upload(payload, a)
+
+print(b.download({"id": "0"}))
 

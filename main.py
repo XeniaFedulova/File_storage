@@ -37,7 +37,7 @@ def handle_info_from_db(data: list):
         params = {"id": obj[0],
                   "name": obj[1],
                   "tag": obj[2]}
-        size = obj[3]
+        size = int(obj[3])
         mimeType = obj[4]
         modificationTime = obj[5]
         inf = MetaInf(params, size, mimeType, modificationTime)
@@ -99,7 +99,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     path = self.directory + "\\" + file_id
                     with open(path, 'rb') as f:
                         name = file[1]
-                        self.send_response(200)
+                        self.send_response(200, message=str(f.read().decode("utf-8")))
                         self.send_header("Content-Type", 'application/octet-stream')
                         self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(name))
                         fs = os.fstat(f.fileno())
