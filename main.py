@@ -1,5 +1,6 @@
 import datetime
 import json
+import urllib.error
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 import os
@@ -99,7 +100,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     path = self.directory + "\\" + file_id
                     with open(path, 'rb') as f:
                         name = file[1]
-                        self.send_response(200, message=str(f.read().decode("utf-8")))
+                        self.send_response(200)
                         self.send_header("Content-Type", 'application/octet-stream')
                         self.send_header("Content-Disposition", 'attachment; filename="{}"'.format(name))
                         fs = os.fstat(f.fileno())
@@ -173,9 +174,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if int(amount_of_deleted_files) > 0:
                     self.storage.delete_from_db(files_to_delete)
                 message = amount_of_deleted_files + " files deleted"
-                self.send_response(200, message=message)
-                self.send_header('Content-type', 'application/json')
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
                 self.end_headers()
+                self.wfile.write(message.encode('utf-8'))
 
         end = urlparse(self.path).path
         if end == '/api/delete':

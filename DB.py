@@ -70,7 +70,6 @@ class DataStorage:
             req_string = self._make_req_string(base_string, params)
         self.cursor.execute(req_string)
         data = self.cursor.fetchall()
-        print(data)
         return data
 
     def delete_from_db(self, file_ids: list):
