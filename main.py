@@ -1,6 +1,5 @@
 import datetime
 import json
-import urllib.error
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 import os
@@ -63,11 +62,18 @@ def get_ids_of_delete_files(data_from_db: list):
         file_ids.append(file_id)
     return file_ids
 
+def delete_unexpected_params(expected_params, params: dict):
+    for param in params.keys():
+        if param not in expected_params:
+            params.pop(param)
+
 
 class RequestHandler(BaseHTTPRequestHandler):
     storage = DataStorage("File_storage")
     # storage.drop_data()
     directory = "C:\\Users\\user\\storage_files"
+    expected_params = ["id", "name", "tag", "size", "mimeType"]
+
 
     def do_GET(self):
 
@@ -77,6 +83,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             if len(params) == 0:
                 flag = True
             params = handle_params_from_req(params)
+            delete_unexpected_params(self.expected_params, params)
             data = self.storage.get_from_database(params=params, get_all_data=flag)
             if len(data) == 0:
                 flag = True
@@ -90,6 +97,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         def download():
             params = parse_qs(urlparse(self.path).query)
             params = handle_params_from_req(params)
+            delete_unexpected_params(self.expected_params, params)
             try:
                 param = {"id": params['id']}
                 data = self.storage.get_from_database(param, download=True)
@@ -116,7 +124,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         elif end == '/api/download':
             download()
         else:
-            self.send_error(404)
+            self.send_error(501)
 
     def do_POST(self):
 
@@ -153,13 +161,14 @@ class RequestHandler(BaseHTTPRequestHandler):
         if end == '/api/upload':
             upload()
         else:
-            self.send_error(404)
+            self.send_error(501)
 
     def do_DELETE(self):
 
         def delete():
             params = parse_qs(urlparse(self.path).query)
             params = handle_params_from_req(params)
+            delete_unexpected_params(self.expected_params, params)
             if len(params) == 0:
                 self.send_error(400)
             else:
@@ -183,7 +192,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         if end == '/api/delete':
             delete()
         else:
-            self.send_error(404)
+            self.send_error(501)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,8 @@ from unittest.case import TestCase
 from connector import FileStorageConnector
 import requests
 from Meta import MetaInf
+import datetime
+from datetime import timedelta
 
 
 class EmptyStorageCase(TestCase):
@@ -64,6 +66,9 @@ class EmptyStorageCase(TestCase):
         result = self.connector.upload(payload="My text", meta=meta)
         file_id = meta.id
         time = set_modificationTime()
+        # res_time = result["body"]["modificationTime"]
+        # delta = time-res_time
+        # result["body"].pop(["modificationTime"])
 
         expected = {
             "id": file_id,
@@ -78,6 +83,7 @@ class EmptyStorageCase(TestCase):
             "status_code": 201,
             "message": "Created"
         }, result)
+        # self.assertEqual(1, delta)
 
     def test_upload_file_by_id(self):
         payload = "My text".encode("utf-8")
@@ -436,19 +442,33 @@ class UnexpectedEndpoints(TestCase):
             response = requests.request(method="post", url="http://127.0.0.1:8000/api/smth")
             response.raise_for_status()
         error = excep.exception.response.status_code
-        self.assertEqual(error, 404)
+        self.assertEqual(error, 501)
 
     def test_unexpected_endpoint_get(self):
         with self.assertRaises(requests.exceptions.HTTPError) as excep:
             response = requests.request(method="get", url="http://127.0.0.1:8000/api/smth")
             response.raise_for_status()
         error = excep.exception.response.status_code
-        self.assertEqual(error, 404)
+        self.assertEqual(error, 501)
 
     def test_unexpected_endpoint_delete(self):
         with self.assertRaises(requests.exceptions.HTTPError) as excep:
             response = requests.request(method="delete", url="http://127.0.0.1:8000/api/smth")
             response.raise_for_status()
         error = excep.exception.response.status_code
-        self.assertEqual(error, 404)
+        self.assertEqual(error, 501)
+
+    def test_unexpected_method(self):
+        with self.assertRaises(requests.exceptions.HTTPError) as excep:
+            response = requests.request(method="head", url="http://127.0.0.1:8000/api/get")
+            response.raise_for_status()
+        error = excep.exception.response.status_code
+        self.assertEqual(error, 501)
+
+    def test_unexpected_method_non_exist(self):
+        with self.assertRaises(requests.exceptions.HTTPError) as excep:
+            response = requests.request(method="something", url="http://127.0.0.1:8000/api/get")
+            response.raise_for_status()
+        error = excep.exception.response.status_code
+        self.assertEqual(error, 501)
 
